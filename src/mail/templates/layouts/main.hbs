@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{title}}</title>
+    <style>
+      {{> (lookup . "css") }}
+    </style>
+  </head>
+
+  <body style="background: #f7f7f7; padding: 20px; font-family: Arial, sans-serif;">
+    <div
+      style="
+        max-width: 500px;
+        margin: auto;
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      "
+    >
+      {{{body}}}
+    </div>
+  </body>
+</html>

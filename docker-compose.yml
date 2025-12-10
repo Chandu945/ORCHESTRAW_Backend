@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # 1. DATABASE SERVICE
+  postgres:
+    image: postgres:16-alpine
+    container_name: auth_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth_network
+
+  # 2. REDIS SERVICE (Ready for Rate Limiting)
+  redis:
+    image: redis:7.2-alpine
+    container_name: auth_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - auth_network
+
+  # 3. NESTJS API SERVICE
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_api
+    ports:
+      - "8080:8080"
+    environment:
+      # Inside Docker, we use the service name 'postgres' as the host
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
+      
+      # Inside Docker, we use 'redis' as the host
+      REDIS_URL: redis://redis:6379
+      
+      # Pass through other secrets from your local .env
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - auth_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: auth_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - auth_network
+
+
+volumes:
+  postgres_data:
+
+networks:
+  auth_network:

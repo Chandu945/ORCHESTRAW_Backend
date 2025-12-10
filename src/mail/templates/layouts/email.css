@@ -1,0 +1,17 @@
+h1 {
+  color: #333;
+  font-size: 26px;
+}
+
+p {
+  color: #555;
+  font-size: 16px;
+}
+
+.code-box {
+  font-size: 32px;
+  font-weight: bold;
+  letter-spacing: 5px;
+  text-align: center;
+  margin: 20px 0;
+}

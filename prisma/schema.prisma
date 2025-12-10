@@ -1,0 +1,131 @@
+// ----------------------------------------------------------------------
+// 1. CONFIGURATION
+// ----------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url = env("DATABASE_URL")   // <- uncomment & set in .env
+}
+
+
+// ----------------------------------------------------------------------
+// 2. ENUMS (Only user/auth related)
+// ----------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum OtpType {
+  SIGNUP
+  PASSWORD_RESET
+  EMAIL_VERIFY
+}
+
+
+
+// ----------------------------------------------------------------------
+// 3. USER & AUTH DOMAIN
+// ----------------------------------------------------------------------
+
+model User {
+  id                        String       @id @default(uuid())
+  firstName                 String       @map("first_name")
+  lastName                  String?      @map("last_name")
+  email                     String       @unique
+  phoneNumber               String?      @unique @map("phone_number")
+
+  // Auth fields
+  passwordHash              String?      @map("password_hash")
+  provider                  AuthProvider @default(LOCAL)
+  googleId                  String?      @unique
+
+  role                      UserRole     @default(USER)
+
+  // Verification
+  isEmailVerified           Boolean      @default(false) @map("is_email_verified")
+
+  // Security
+  currentHashedRefreshToken String?
+
+  // Profile Image
+  profileImageUrl           String?      @map("profile_image_url")
+
+  // Timestamps
+  createdAt                 DateTime     @default(now()) @map("created_at")
+  updatedAt                 DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  adminLogs                 AdminLog[]
+  otps                      EmailOtp[]
+
+  @@map("users")
+}
+
+
+
+// ----------------------------------------------------------------------
+// 4. OTP MODEL (for login/signup/reset)
+// ----------------------------------------------------------------------
+
+model EmailOtp {
+  id           String   @id @default(uuid())
+  email        String
+  otpCode      String   @map("otp_code")
+  otpHash      String
+  type         OtpType
+  attemptCount Int      @default(0)
+  expiresAt    DateTime @map("expires_at")
+  isUsed       Boolean  @default(false) @map("is_used")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Optional User Link
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, type, isUsed])
+  @@map("email_otp")
+}
+
+
+
+// ----------------------------------------------------------------------
+// 5. RESET TOKEN (Password reset flow)
+// ----------------------------------------------------------------------
+
+model ResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------
+// 7. ADMIN LOGS (Admin actions audit)
+// ----------------------------------------------------------------------
+
+model AdminLog {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  action      String
+  targetId    String   @map("target_id")
+  targetTable String   @map("target_table")
+  ipAddress   String?  @map("ip_address")
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin       User     @relation(fields: [adminId], references: [id])
+
+  @@map("admin_activity_logs")
+}
