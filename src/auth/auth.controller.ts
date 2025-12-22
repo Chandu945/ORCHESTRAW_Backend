@@ -22,8 +22,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
-import { LoginThrottlerGuard } from '../common/guards/throttler/login-throttler.guard';
-import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guard';
+// import { LoginThrottlerGuard } from '../common/guards/throttler/login-throttler.guard';
+// import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guard';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyResetOtpDto } from './dto/reset-otpverify.dto';
 
@@ -44,7 +44,7 @@ export class AuthController {
     return this.authService.signup(signupDto);
   }
 
-  @UseGuards(OtpThrottlerGuard)
+  // @UseGuards(OtpThrottlerGuard)
   // @Throttle({ short: { limit: 3, ttl: 60000 } }) // strict → 3 OTPs/min/email
   @Post('send-otp')
   async sendOtp(@Body() dto: SendOtpDto) {
@@ -52,7 +52,7 @@ export class AuthController {
   }
 
   //email verify
-  @UseGuards(LoginThrottlerGuard)
+  // @UseGuards(LoginThrottlerGuard)
   // @Throttle({ short: { limit: 5, ttl: 60000 } }) // allow 5 mistakes, block guessing
   @Post('verify-email')
   async verifyEmail(@Body() dto: VerifyEmailDto) {
@@ -61,7 +61,7 @@ export class AuthController {
 
 
   // LOGIN
-  @UseGuards(LoginThrottlerGuard)
+  // @UseGuards(LoginThrottlerGuard)
   // @Throttle({ short: { limit: 3, ttl: 60000 } }) // prevent brute force logins
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -70,7 +70,7 @@ export class AuthController {
   }
 
   // LOGOUT
-  @UseGuards(AccessTokenGuard)
+  // @UseGuards(AccessTokenGuard)
   // @Throttle({ long: {} }) // logout is not sensitive → relaxed
   @Post('logout')
   logout(@Req() req: AuthenticatedRequest) {
@@ -81,7 +81,7 @@ export class AuthController {
 
 
   // REFRESH TOKENS
-  @UseGuards(RefreshTokenGuard)
+  // @UseGuards(RefreshTokenGuard)
   // @Throttle({ medium: { limit: 20, ttl: 30000 } }) // limit refresh abuse
   @Post('refresh')
   refreshTokens(@Req() req: AuthenticatedRequest) {
@@ -109,7 +109,7 @@ export class AuthController {
 
 
   // --- FORGOT PASSWORD ---
-  @UseGuards(OtpThrottlerGuard)
+  // @UseGuards(OtpThrottlerGuard)
   // @Throttle({ short: { limit: 3, ttl: 60000 } }) // strict: prevent OTP spam
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {

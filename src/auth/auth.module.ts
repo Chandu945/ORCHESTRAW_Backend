@@ -9,8 +9,6 @@ import { MailModule } from 'src/mail/mail.module';
 import { AccessTokenStrategy } from './strategies/accessToken.strategy';
 import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { LoginThrottlerGuard } from '../common/guards/throttler/login-throttler.guard';
-import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guard';
 
 @Module({
   imports: [
@@ -25,8 +23,6 @@ import { OtpThrottlerGuard } from '../common/guards/throttler/otp-throttler.guar
     AccessTokenStrategy,
     RefreshTokenStrategy,
     GoogleStrategy,
-    LoginThrottlerGuard,
-    OtpThrottlerGuard,
   ],
   controllers: [AuthController],
 })
