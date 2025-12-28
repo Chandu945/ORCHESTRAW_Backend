@@ -18,8 +18,11 @@ datasource db {
 
 enum UserRole {
   USER
+  ARKESTA
   ADMIN
+  SUPER_ADMIN
 }
+
 
 enum AuthProvider {
   LOCAL

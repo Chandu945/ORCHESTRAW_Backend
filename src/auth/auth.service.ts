@@ -23,7 +23,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OtpType, UserRole, AuthProvider } from '@prisma/client';
 import { SendOtpDto } from './dto/send-otp.dto';
-import { use } from 'passport';
 
 @Injectable()
 export class AuthService {
@@ -33,7 +32,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
@@ -59,7 +58,7 @@ export class AuthService {
 
     if (!verifiedOtp) {
       throw new BadRequestException(
-        'Email not verified. Please verify your email before signup.'
+        'Email not verified. Please verify your email before signup.',
       );
     }
 
@@ -101,7 +100,6 @@ export class AuthService {
     };
   }
 
-
   // ---------------------------------------------------------
   //  SEND OTP
   // ---------------------------------------------------------
@@ -110,8 +108,7 @@ export class AuthService {
     const normalizedEmail = email.toLowerCase();
 
     const existingUser = await this.usersService.findByEmail(normalizedEmail);
-    if (existingUser) throw new ConflictException('Email is already used.')
-
+    if (existingUser) throw new ConflictException('Email is already used.');
 
     //check cooldown and latest otp and last otp
     const lastOtp = await this.prisma.emailOtp.findFirst({
@@ -124,7 +121,9 @@ export class AuthService {
       const diff = now - lastOtp.createdAt.getTime(); // millseconds
 
       if (diff < AppConstants.OTP_COOLDOWN_SECONDS * 1000) {
-        const left = Math.ceil((AppConstants.OTP_COOLDOWN_SECONDS * 1000 - diff) / 1000);
+        const left = Math.ceil(
+          (AppConstants.OTP_COOLDOWN_SECONDS * 1000 - diff) / 1000,
+        );
         throw new BadRequestException({
           message: `Please wait ${left} seconds before requesting a new OTP.`,
         });
@@ -132,14 +131,17 @@ export class AuthService {
     }
 
     //Delete Previous OTP
-    await this.prisma.emailOtp.deleteMany({ where: { email: normalizedEmail } });
+    await this.prisma.emailOtp.deleteMany({
+      where: { email: normalizedEmail },
+    });
 
     //Generate OTP
     const otp = CryptoHelper.generateOtp();
     const otpHash = await CryptoHelper.hashOtp(otp);
 
-    const expiresAt = new Date(now + AppConstants.OTP_EXPIRY_MINUTES * 60 * 1000);
-
+    const expiresAt = new Date(
+      now + AppConstants.OTP_EXPIRY_MINUTES * 60 * 1000,
+    );
 
     await this.prisma.emailOtp.create({
       data: {
@@ -152,15 +154,11 @@ export class AuthService {
       },
     });
 
-    //send otp 
+    //send otp
     await this.mailService.sendUserConfirmation(normalizedEmail, otp);
 
     return { message: 'OTP Sent Successfully to your email' };
-
   }
-
-
-
 
   // ---------------------------------------------------------
   // VERIFY EMAIL OTP
@@ -215,13 +213,11 @@ export class AuthService {
     return { message: 'Email verified successfully.' };
   }
 
-
   // ---------------------------------------------------------
   // LOGIN
   // ---------------------------------------------------------
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
-
 
     // const normalizedEmail = email.toLowerCase();
     const user = await this.usersService.findByEmail(email);
@@ -252,7 +248,7 @@ export class AuthService {
         lastName: user.lastName,
         email: user.email,
         phoneNumber: user.phoneNumber,
-      }
+      },
     };
   }
 
@@ -355,7 +351,9 @@ export class AuthService {
       const diff = now - lastOtp.createdAt.getTime(); // milliseconds
 
       if (diff < AppConstants.OTP_COOLDOWN_SECONDS * 1000) {
-        const left = Math.ceil((AppConstants.OTP_COOLDOWN_SECONDS * 1000 - diff) / 1000);
+        const left = Math.ceil(
+          (AppConstants.OTP_COOLDOWN_SECONDS * 1000 - diff) / 1000,
+        );
         throw new BadRequestException({
           message: `Please wait ${left} seconds before requesting a new OTP.`,
         });
@@ -365,15 +363,13 @@ export class AuthService {
       where: { email, type: OtpType.PASSWORD_RESET },
     });
 
-
     //otp generation
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const expiresAt = new Date(
-      Date.now() + AppConstants.OTP_REST_EXPIR_MINUTES * 60 * 1000
+      Date.now() + AppConstants.OTP_REST_EXPIR_MINUTES * 60 * 1000,
     );
-
 
     await this.prisma.emailOtp.create({
       data: {
@@ -405,13 +401,13 @@ export class AuthService {
     });
 
     if (!tokenRecord) {
-      throw new NotFoundException("Reset token is invalid or already used.");
+      throw new NotFoundException('Reset token is invalid or already used.');
     }
 
     // 2Check if token expired (DB expiry)
     if (tokenRecord.expiresAt < new Date()) {
       await this.prisma.resetToken.deleteMany({ where: { token: resetToken } });
-      throw new BadRequestException("Reset token has expired.");
+      throw new BadRequestException('Reset token has expired.');
     }
 
     // 3️ Verify JWT
@@ -423,12 +419,12 @@ export class AuthService {
     } catch (err) {
       // Also delete from DB if JWT invalid
       await this.prisma.resetToken.deleteMany({ where: { token: resetToken } });
-      throw new BadRequestException("Invalid or expired reset token.");
+      throw new BadRequestException('Invalid or expired reset token.');
     }
 
     // 4️ Ensure email in token matches DTO
     if (payload.email !== email) {
-      throw new UnauthorizedException("Token does not belong to this email.");
+      throw new UnauthorizedException('Token does not belong to this email.');
     }
 
     // 5️ Hash & update password
@@ -445,7 +441,7 @@ export class AuthService {
     });
 
     return {
-      message: "Password has been reset successfully.",
+      message: 'Password has been reset successfully.',
     };
   }
 
@@ -453,36 +449,37 @@ export class AuthService {
   //googleAuth
   //xxxxxxxxxxxxxx
   async googleOAuthLogin(profile: any) {
-  const { email, firstName, lastName, googleId, profileImageUrl } = profile;
+    const { email, firstName, lastName, googleId, profileImageUrl } = profile;
 
-  // 1. Check if user exists
-  let user = await this.prisma.user.findUnique({
-    where: { email },
-  });
-
-  // 2. If not, create user
-  if (!user) {
-    user = await this.prisma.user.create({
-      data: {
-        email,
-        firstName,
-        lastName,
-        googleId,
-        provider: 'GOOGLE',
-        isEmailVerified: true,
-        profileImageUrl,
-      },
+    // 1. Check if user exists
+    let user = await this.prisma.user.findUnique({
+      where: { email },
     });
+
+    // 2. If not, create user
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          googleId,
+          provider: 'GOOGLE',
+          isEmailVerified: true,
+          profileImageUrl,
+          role: UserRole.USER,
+        },
+      });
+    }
+
+    // 3. Generate tokens
+    const tokens = await this.getTokens(user.id, user.email, user.role);
+
+    // 4. Save refresh token
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+
+    return tokens;
   }
-
-  // 3. Generate tokens
-  const tokens = await this.getTokens(user.id, user.email, user.role);
-
-  // 4. Save refresh token
-  await this.updateRefreshToken(user.id, tokens.refresh_token);
-
-  return tokens;
-}
 
   //xxxxxxxxxxxxxxxxxxxx
   // Verify OTp
@@ -516,9 +513,8 @@ export class AuthService {
 
     const resetToken = await this.jwtService.signAsync(
       { email },
-      { secret: process.env.JWT_RESET_SECRET, expiresIn: '10m' }
+      { secret: process.env.JWT_RESET_SECRET, expiresIn: '10m' },
     );
-
 
     await this.prisma.resetToken.create({
       data: {
@@ -528,14 +524,9 @@ export class AuthService {
       },
     });
 
-
-
-    return ({
+    return {
       message: 'OTP verified successfully. Use this token to reset password.',
       resetToken,
-    });
-
-
+    };
   }
-
 }

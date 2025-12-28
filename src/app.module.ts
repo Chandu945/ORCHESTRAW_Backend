@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 // import { ThrottlerModule } from '@nestjs/throttler';
 // import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
@@ -11,6 +11,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { AdminModule } from './admin/admin.module';
+import { SeedModule } from './seed/seed.module';
+import { SeedService } from './seed/seed.service';
 
 @Module({
   imports: [
@@ -21,48 +23,6 @@ import { AdminModule } from './admin/admin.module';
       isGlobal: true,
     }),
 
-    // ------------------------------------------------------------
-    // GLOBAL THROTTLER CONFIG (Redis Storage)
-    // ------------------------------------------------------------
-    // ThrottlerModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   inject: [ConfigService],
-
-    //   useFactory: (config: ConfigService) => ({
-    //     // ------------------------------------------------------------
-    //     // Named throttler profiles (usable in @Throttle decorators)
-    //     // ------------------------------------------------------------
-    //     throttlers: [
-    //       // Strict throttler → OTP + Login
-    //       {
-    //         name: 'short',
-    //         ttl: 60000, // 1 minute
-    //         limit: 3, // 3 requests per minute
-    //       },
-
-    //       // Medium throttler → refresh tokens, register, reset password
-    //       {
-    //         name: 'medium',
-    //         ttl: 10000, // 10 seconds
-    //         limit: 20, // 20 requests per 10 seconds
-    //       },
-
-    //       // Long throttler → public & safe endpoints
-    //       {
-    //         name: 'long',
-    //         ttl: 60000, // 1 minute
-    //         limit: 100, // 100 requests per minute
-    //       },
-    //     ],
-
-    //     // ------------------------------------------------------------
-    //     // REDIS STORAGE CONFIGURATION
-    //     // ------------------------------------------------------------
-    //     storage: new ThrottlerStorageRedisService(
-    //       config.get<string>('REDIS_URL'), // e.g. redis://localhost:6379
-    //     ),
-    //   }),
-    // }),
 
     // ------------------------------------------------------------
     // PROJECT MODULES
@@ -72,6 +32,7 @@ import { AdminModule } from './admin/admin.module';
     AuthModule,
     MailModule,
     AdminModule,
+    SeedModule
   ],
 
   // ------------------------------------------------------------
@@ -84,4 +45,10 @@ import { AdminModule } from './admin/admin.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly seedService: SeedService) {}
+
+  async onModuleInit() {
+    await this.seedService.seedAdmins();
+  }
+}
