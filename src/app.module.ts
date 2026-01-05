@@ -13,6 +13,8 @@ import { MailModule } from './mail/mail.module';
 import { AdminModule } from './admin/admin.module';
 import { SeedModule } from './seed/seed.module';
 import { SeedService } from './seed/seed.service';
+import { BandAuthModule } from './band-auth/band-auth.module';
+import { BandOtpModule } from './band-otp/band-otp.module';
 
 @Module({
   imports: [
@@ -32,7 +34,9 @@ import { SeedService } from './seed/seed.service';
     AuthModule,
     MailModule,
     AdminModule,
-    SeedModule
+    SeedModule,
+    BandAuthModule,
+    BandOtpModule
   ],
 
   // ------------------------------------------------------------

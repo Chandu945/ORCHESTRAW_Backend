@@ -56,3 +56,5 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+# Postman Collection
+BAND_AUTH_POSTMAN_COLLECTION.json
