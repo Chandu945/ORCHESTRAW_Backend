@@ -1,18 +1,35 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterBandDto {
+  @ApiProperty({
+    description: 'Band name',
+    example: 'The Beatles',
+  })
   @IsNotEmpty()
   @IsString()
   bandName: string;
 
+  @ApiProperty({
+    description: 'Band owner name',
+    example: 'John Lennon',
+  })
   @IsNotEmpty()
   @IsString()
   ownerName: string;
 
+  @ApiProperty({
+    description: 'Band owner email',
+    example: 'owner@band.com',
+  })
   @IsNotEmpty()
   @IsEmail()
   email: string;
 
+  @ApiProperty({
+    description: 'Band owner phone number (10 digits)',
+    example: '9876543210',
+  })
   @IsNotEmpty()
   @IsString()
   @Matches(/^[0-9]{10}$/, {
@@ -20,6 +37,10 @@ export class RegisterBandDto {
   })
   phoneNumber: string;
 
+  @ApiProperty({
+    description: 'Password (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)',
+    example: 'Password@123',
+  })
   @IsNotEmpty()
   @IsString()
   @MinLength(8, {

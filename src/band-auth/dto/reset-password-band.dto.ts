@@ -1,10 +1,19 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class ResetPasswordBandDto {
+  @ApiProperty({
+    description: 'Band owner email address',
+    example: 'owner@band.com',
+  })
   @IsNotEmpty()
   @IsEmail()
   email: string;
 
+  @ApiProperty({
+    description: 'New password (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)',
+    example: 'NewPassword@123',
+  })
   @IsNotEmpty()
   @IsString()
   @MinLength(8, {
