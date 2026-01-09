@@ -15,6 +15,7 @@ import { SeedModule } from './seed/seed.module';
 import { SeedService } from './seed/seed.service';
 import { BandAuthModule } from './band-auth/band-auth.module';
 import { BandOtpModule } from './band-otp/band-otp.module';
+import { OrchestrawAuthModule } from './orchestraw-auth/orchestraw-auth.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { BandOtpModule } from './band-otp/band-otp.module';
     SeedModule,
     BandAuthModule,
     BandOtpModule
+    OrchestrawAuthModule,
   ],
 
   // ------------------------------------------------------------
