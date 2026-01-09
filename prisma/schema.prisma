@@ -132,3 +132,52 @@ model AdminLog {
 
   @@map("admin_activity_logs")
 }
+
+
+// ----------------------------------------------------------------------
+// 8. ORCHESTRAW STANDALONE AUTH DOMAIN
+// ----------------------------------------------------------------------
+
+enum OrchestrawAccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrchestrawOtpPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model OrchestrawAccount {
+  id               String                      @id @default(uuid())
+  createdAt        DateTime                    @default(now()) @map("created_at")
+  updatedAt        DateTime                    @updatedAt @map("updated_at")
+  displayName      String                      @map("display_name")
+  contactName      String                      @map("contact_name")
+  email            String                      @unique
+  phoneNumber      String                      @unique @map("phone_number")
+  passwordHash     String                      @map("password_hash")
+  emailVerified    Boolean                     @default(true) @map("email_verified")
+  status           OrchestrawAccountStatus     @default(ACTIVE)
+  refreshTokenHash String?                     @map("refresh_token_hash")
+  otps             OrchestrawOtp[]
+
+  @@map("orchestraw_accounts")
+}
+
+model OrchestrawOtp {
+  id         String                   @id @default(uuid())
+  createdAt  DateTime                 @default(now()) @map("created_at")
+  email      String
+  purpose    OrchestrawOtpPurpose
+  codeHash   String                   @map("code_hash")
+  expiresAt  DateTime                 @map("expires_at")
+  usedAt     DateTime?                @map("used_at")
+  attempts   Int                      @default(0)
+  lastSentAt DateTime?                @map("last_sent_at")
+  accountId  String?                  @map("account_id")
+  account    OrchestrawAccount?       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([email, purpose])
+  @@map("orchestraw_otps")
+}
