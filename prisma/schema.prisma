@@ -35,6 +35,17 @@ enum OtpType {
   EMAIL_VERIFY
 }
 
+enum BandAccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum BandOtpPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
 
 
 // ----------------------------------------------------------------------
@@ -135,6 +146,50 @@ model AdminLog {
 
 
 // ----------------------------------------------------------------------
+// 8. BAND ACCOUNT & AUTHENTICATION DOMAIN
+// ----------------------------------------------------------------------
+
+model BandAccount {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  bandName         String   @map("band_name")
+  ownerName        String   @map("owner_name")
+
+  email            String   @unique
+  phoneNumber      String   @unique @map("phone_number")
+  passwordHash     String   @map("password_hash")
+
+  emailVerified    Boolean  @default(false) @map("email_verified")
+  status           BandAccountStatus @default(PENDING_VERIFICATION)
+
+  refreshTokenHash String?  @map("refresh_token_hash")
+
+  otps             BandOtp[]
+
+  @@map("band_accounts")
+}
+
+model BandOtp {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  bandAccountId String   @map("band_account_id")
+  bandAccount   BandAccount @relation(fields: [bandAccountId], references: [id], onDelete: Cascade)
+
+  purpose     BandOtpPurpose
+  codeHash    String   @map("code_hash")
+  expiresAt   DateTime @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+
+  attempts    Int      @default(0)
+  lastSentAt  DateTime? @map("last_sent_at")
+
+  @@index([bandAccountId, purpose])
+  @@map("band_otps")
+}
+
 // 8. ORCHESTRAW STANDALONE AUTH DOMAIN
 // ----------------------------------------------------------------------
 
