@@ -9,6 +9,7 @@ export class OrchestrawJwtAccessStrategy extends PassportStrategy(
   'orchestraw-jwt-access',
 ) {
   constructor(configService: ConfigService) {
+    console.log('adcc'+ ExtractJwt.fromAuthHeaderAsBearerToken());
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

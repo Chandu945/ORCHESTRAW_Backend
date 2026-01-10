@@ -17,6 +17,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000',
+      'http://localhost:8080',
       'http://localhost:3001',
       'https://yourdomain.com',
     ],
@@ -47,7 +48,15 @@ async function bootstrap() {
       'Industrial grade Authentication with Access/Refresh tokens, RBAC, and OTP',
     )
     .setVersion('1.0')
-    .addBearerAuth() // Enables the "Authorize" button for JWTs
+    .addBearerAuth(
+    {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      in: 'header',
+    },
+    'email-verify-token', // name
+  ) // Enables the "Authorize" button for JWTs
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
