@@ -16,8 +16,9 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { OrchestrawAccessGuard } from './guards/orchestraw-access.guard';
 import { OrchestrawRefreshGuard } from './guards/orchestraw-refresh.guard';
 import { OrchestrawEmailVerifyGuard } from './guards/orchestraw-email-verify.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller('api/v1/orchestraw-auth')
+@Controller('/orchestraw-auth')
 export class OrchestrawAuthController {
   constructor(private authService: OrchestrawAuthService) {}
 
@@ -49,14 +50,26 @@ export class OrchestrawAuthController {
    * Authorization: Bearer email_verify_jwt
    * Body: { displayName, contactName, phoneNumber, password }
    */
-  @Post('complete-registration')
+  // @Post('complete-registration')
+  // @UseGuards(OrchestrawEmailVerifyGuard)
+  // async completeRegistration(
+  //   @Request() req,
+  //   @Body() dto: CompleteRegistrationDto,
+  // ) {
+  //   const email = req.user.email;
+  //   return await this.authService.completeRegistration(email, dto);
+  // }
+  @ApiBearerAuth('email-verify-token')
+   @Post('complete-registration')
   @UseGuards(OrchestrawEmailVerifyGuard)
   async completeRegistration(
     @Request() req,
     @Body() dto: CompleteRegistrationDto,
   ) {
+    // 🔹 Comes from validate() in strategy
     const email = req.user.email;
-    return await this.authService.completeRegistration(email, dto);
+
+    return this.authService.completeRegistration(email, dto);
   }
 
   /**

@@ -8,10 +8,16 @@ export class OrchestrawEmailVerifyStrategy extends PassportStrategy(
   Strategy,
   'orchestraw-email-verify',
 ) {
-  constructor(configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     super({
+      // 🔹 Reads token ONLY from:
+      // Authorization: Bearer <JWT>
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+
+      // 🔹 Token must NOT be expired
       ignoreExpiration: false,
+
+      // 🔹 Secret used to verify email verification token
       secretOrKey: configService.get<string>(
         'ORCHESTRAW_JWT_EMAIL_VERIFY_SECRET',
         'orchestraw-email-verify-secret-key',
@@ -19,10 +25,11 @@ export class OrchestrawEmailVerifyStrategy extends PassportStrategy(
     });
   }
 
+  // 🔹 Runs ONLY after JWT is verified successfully
   async validate(payload: any) {
     return {
       email: payload.email,
-      type: payload.type,
+      type: payload.type, // must be 'email_verify'
     };
   }
 }
