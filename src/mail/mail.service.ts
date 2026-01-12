@@ -77,13 +77,31 @@ export class MailService {
     await this.sendMail(email, 'Confirm Your Email',html);
   }
 
+  // Send OTP (generic method used by orchestraw-auth)
+  async sendOtp(email: string, otp: string) {
+    const html = this.renderTemplate('otp/otp.hbs', { otp });
+    await this.sendMail(email, 'Verify Your Email', html);
+  }
+
   // Send Password Reset Otp
   async sendPasswordReset(email: string, otp: string) {
     const html = this.renderTemplate('otp/otp.hbs',{otp});
     await this.sendMail(email, 'Reset Your Password', html);
   }
 
+  // Send Band Account OTP (Email Verification or Password Reset)
+  async sendBandOtpEmail(email: string, otp: string) {
+    const html = this.renderTemplate('otp/otp.hbs', { otp });
+    await this.sendMail(email, 'Band Account Verification', html);
+  }
+
   // Send Welcome Email
+  async sendWelcome(email: string, displayName: string) {
+    const html = this.renderTemplate('welcome/welcome.hbs', { displayName });
+    await this.sendMail(email, 'Welcome to Orchestraw!', html);
+  }
+
+  // Send Welcome Email (legacy method)
   // async sendWelcomeEmail(email:string){
   //   const html = this.renderTemplate('welcome/Welcome.hbs',{});
   //   await this.sendMail(email, 'Welcome! Email Verified', html);

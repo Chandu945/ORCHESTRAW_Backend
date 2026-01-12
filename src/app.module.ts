@@ -1,8 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-// import { ThrottlerModule } from '@nestjs/throttler';
-// import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
@@ -13,6 +10,10 @@ import { MailModule } from './mail/mail.module';
 import { AdminModule } from './admin/admin.module';
 import { SeedModule } from './seed/seed.module';
 import { SeedService } from './seed/seed.service';
+import { BandAuthModule } from './band-auth/band-auth.module';
+import { BandOtpModule } from './band-otp/band-otp.module';
+import { OrchestrawAuthModule } from './orchestraw-auth/orchestraw-auth.module';
+
 
 @Module({
   imports: [
@@ -32,7 +33,10 @@ import { SeedService } from './seed/seed.service';
     AuthModule,
     MailModule,
     AdminModule,
-    SeedModule
+    SeedModule,
+    BandAuthModule,
+    BandOtpModule,
+    OrchestrawAuthModule,
   ],
 
   // ------------------------------------------------------------
