@@ -138,62 +138,56 @@ export class BandAuthService {
    * Register a band account
    */
   async register(dto: RegisterBandDto): Promise<{ message: string }> {
-    const { email, phoneNumber, password, bandName, ownerName } = dto;
+  const { email, phoneNumber, password, bandName, ownerName } = dto;
 
-    // Check if email already registered
-    const existingEmail = await this.prisma.bandAccount.findUnique({
-      where: { email },
-    });
+  const bandAccount = await this.prisma.bandAccount.findUnique({
+    where: { email },
+  });
 
-    if (existingEmail && existingEmail.emailVerified) {
-      throw new ConflictException('Email already registered');
-    }
-
-    // Check if phone already registered
-    const existingPhone = await this.prisma.bandAccount.findUnique({
-      where: { phoneNumber },
-    });
-
-    if (existingPhone && existingPhone.emailVerified) {
-      throw new ConflictException('Phone number already registered');
-    }
-
-    // Check if email is verified
-    let bandAccount = await this.prisma.bandAccount.findUnique({
-      where: { email },
-    });
-
-    if (!bandAccount) {
-      throw new BadRequestException(
-        'Email not verified. Please verify your email first.',
-      );
-    }
-
-    if (!bandAccount.emailVerified) {
-      throw new ForbiddenException(
-        'Email not verified. Please verify your email first.',
-      );
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Update band account with registration details
-    await this.prisma.bandAccount.update({
-      where: { id: bandAccount.id },
-      data: {
-        bandName,
-        ownerName,
-        phoneNumber,
-        passwordHash,
-        status: 'ACTIVE',
-      },
-    });
-
-    return {
-      message: 'Band registered successfully',
-    };
+  if (!bandAccount) {
+    throw new BadRequestException(
+      'Email not verified. Please verify your email first.',
+    );
   }
+
+  // ❌ Email exists but not verified
+  if (!bandAccount.emailVerified) {
+    throw new ForbiddenException(
+      'Email not verified. Please verify your email first.',
+    );
+  }
+
+  // ❌ Already fully registered
+  if (bandAccount.status === 'ACTIVE') {
+    throw new ConflictException('Email already registered');
+  }
+
+  // ❌ Phone already used by another ACTIVE band
+  const phoneOwner = await this.prisma.bandAccount.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (phoneOwner && phoneOwner.id !== bandAccount.id) {
+    throw new ConflictException('Phone number already registered');
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await this.prisma.bandAccount.update({
+    where: { id: bandAccount.id },
+    data: {
+      bandName,
+      ownerName,
+      phoneNumber,
+      passwordHash,
+      status: 'ACTIVE',
+    },
+  });
+
+  return {
+    message: 'Band registered successfully',
+  };
+}
 
   /**
    * Login band account

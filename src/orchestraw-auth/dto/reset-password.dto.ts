@@ -1,7 +1,7 @@
 import { IsEmail, IsString, IsStrongPassword, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ResetPasswordDto {
+export class OrchestarwResetPasswordDto {
   @ApiProperty({
     example: 'user@example.com',
     description: 'User email address',

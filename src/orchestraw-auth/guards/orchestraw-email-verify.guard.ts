@@ -1,7 +1,10 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ExecutionContext } from '@nestjs/common';
-
 
 @Injectable()
 export class OrchestrawEmailVerifyGuard extends AuthGuard(
@@ -12,10 +15,6 @@ export class OrchestrawEmailVerifyGuard extends AuthGuard(
   }
 
   handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
-
-
-   
     if (err || !user) {
       if (info?.message === 'jwt expired') {
         throw new UnauthorizedException(
@@ -34,21 +33,20 @@ export class OrchestrawEmailVerifyGuard extends AuthGuard(
       );
     }
 
-   
+    // 🔒 Mandatory payload checks
     if (!user.email) {
       throw new ForbiddenException(
         'Email not found in verification token.',
       );
     }
 
-    if (user.type !== 'email_verify') {
+    if (!user.type || user.type !== 'email_verify') {
       throw new ForbiddenException(
-        'Invalid token type. Expected email verification token.',
+        'Invalid token type. Email verification token required.',
       );
     }
 
-    
-    request.user = user;
+    // Passport will attach this to req.user automatically
     return user;
   }
 }

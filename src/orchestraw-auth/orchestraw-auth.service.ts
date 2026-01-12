@@ -18,8 +18,8 @@ import { StartEmailVerificationDto } from './dto/start-email-verification.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
 import { LoginOrchestrawDto } from './dto/login-orchestraw.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
+import { OrchestrawForgotPasswordDto } from './dto/forgot-password.dto';
+import { OrchestarwResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class OrchestrawAuthService {
@@ -142,58 +142,57 @@ export class OrchestrawAuthService {
    * Step 3: Complete Registration
    * Creates OrchestrawAccount after email verification
    */
-  async completeRegistration(
-    email: string,
-    dto: CompleteRegistrationDto,
-  ): Promise<{ message: string; accountId: string }> {
-    const { displayName, contactName, phoneNumber, password } = dto;
+async completeRegistration(
+  email: string,
+  dto: CompleteRegistrationDto,
+): Promise<{ message: string; accountId: string }> {
+  const { displayName, contactName, phoneNumber, password } = dto;
 
-    // Check email still not registered
-    const existingAccount = await this.prisma.orchestrawAccount.findUnique({
-      where: { email },
-    });
+  // 1️⃣ Email must NOT already be registered
+  const existingAccount = await this.prisma.orchestrawAccount.findUnique({
+    where: { email },
+  });
 
-    if (existingAccount) {
-      throw new ConflictException('Email is already registered');
-    }
-
-    // Check phone number uniqueness
-    const existingPhone = await this.prisma.orchestrawAccount.findUnique({
-      where: { phoneNumber },
-    });
-
-    if (existingPhone) {
-      throw new ConflictException('Phone number is already registered');
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create account
-    const account = await this.prisma.orchestrawAccount.create({
-      data: {
-        displayName,
-        contactName,
-        email,
-        phoneNumber,
-        passwordHash,
-        emailVerified: true,
-      },
-    });
-
-    // Send welcome email
-    try {
-      await this.mailService.sendWelcome(email, displayName);
-    } catch (error) {
-      // Log error but don't fail registration
-      console.error('Failed to send welcome email:', error);
-    }
-
-    return {
-      message: 'Account created successfully',
-      accountId: account.id,
-    };
+  if (existingAccount) {
+    throw new ConflictException('Email already registered');
   }
+
+  // 2️⃣ Phone number uniqueness
+  const phoneOwner = await this.prisma.orchestrawAccount.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (phoneOwner) {
+    throw new ConflictException('Phone number already registered');
+  }
+
+  // 3️⃣ Hash password
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  // 4️⃣ Create account (THIS is the registration moment)
+  const account = await this.prisma.orchestrawAccount.create({
+    data: {
+      displayName,
+      contactName,
+      email,
+      phoneNumber,
+      passwordHash,
+      emailVerified: true,
+      status: 'ACTIVE',
+    },
+  });
+
+  // 5️⃣ Best-effort welcome email
+  this.mailService
+    .sendWelcome(email, displayName)
+    .catch(err => console.error('Welcome email failed', err));
+
+  return {
+    message: 'Account created successfully',
+    accountId: account.id,
+  };
+}
+
 
   /**
    * Login with email and password
@@ -257,7 +256,7 @@ export class OrchestrawAuthService {
   /**
    * Request password reset OTP
    */
-  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; expiresAt: Date }> {
+  async forgotPassword(dto: OrchestrawForgotPasswordDto): Promise<{ message: string; expiresAt: Date }> {
     const { email } = dto;
 
     // Check if account exists
@@ -320,7 +319,7 @@ export class OrchestrawAuthService {
   /**
    * Reset password with OTP verification
    */
-  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(dto: OrchestarwResetPasswordDto): Promise<{ message: string }> {
     const { email, otp, newPassword } = dto;
 
     // Find account

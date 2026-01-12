@@ -25,102 +25,85 @@ export class OrchestrawOtpService {
    * Invalidates any previous OTPs for same email/purpose
    */
   async createOtp(
-    email: string,
-    purpose: 'EMAIL_VERIFY' | 'PASSWORD_RESET',
-    expiryMinutes: number = 10,
-  ): Promise<{ code: string; expiresAt: Date }> {
-    // Delete expired OTPs for this email/purpose
-    await this.prisma.orchestrawOtp.deleteMany({
-      where: {
-        email,
-        purpose,
-        expiresAt: {
-          lt: new Date(),
-        },
-      },
-    });
+  email: string,
+  purpose: 'EMAIL_VERIFY' | 'PASSWORD_RESET',
+  expiryMinutes = 10,
+): Promise<{ code: string; expiresAt: Date }> {
+  const code = this.generateOtpCode();
+  const codeHash = this.hashOtpCode(code);
+  const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-    const code = this.generateOtpCode();
-    const codeHash = this.hashOtpCode(code);
-    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
-    const now = new Date();
+  // 🔒 Invalidate ALL previous OTPs for this email/purpose
+  await this.prisma.orchestrawOtp.updateMany({
+    where: {
+      email,
+      purpose,
+      usedAt: null,
+    },
+    data: {
+      usedAt: new Date(),
+    },
+  });
 
-    // Create new OTP record
-    await this.prisma.orchestrawOtp.create({
-      data: {
-        email,
-        purpose,
-        codeHash,
-        expiresAt,
-        lastSentAt: now,
-        attempts: 0,
-      },
-    });
+  await this.prisma.orchestrawOtp.create({
+    data: {
+      email,
+      purpose,
+      codeHash,
+      expiresAt,
+      lastSentAt: new Date(),
+      attempts: 0,
+    },
+  });
 
-    return { code, expiresAt };
-  }
+  return { code, expiresAt };
+}
+
 
   /**
    * Verify OTP and mark as used
    */
   async verifyOtp(
-    email: string,
-    code: string,
-    purpose: 'EMAIL_VERIFY' | 'PASSWORD_RESET',
-    maxAttempts: number = 5,
-  ): Promise<{ success: boolean; error?: string }> {
-    const codeHash = this.hashOtpCode(code);
-    const now = new Date();
+  email: string,
+  code: string,
+  purpose: 'EMAIL_VERIFY' | 'PASSWORD_RESET',
+  maxAttempts = 5,
+): Promise<{ success: boolean; error?: string }> {
+  const codeHash = this.hashOtpCode(code);
+  const now = new Date();
 
-    // Find latest OTP for this email/purpose
-    const otp = await this.prisma.orchestrawOtp.findFirst({
-      where: {
-        email,
-        purpose,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+  const otp = await this.prisma.orchestrawOtp.findFirst({
+    where: { email, purpose },
+    orderBy: { createdAt: 'desc' },
+  });
 
-    if (!otp) {
-      return { success: false, error: 'OTP not found' };
-    }
+  if (!otp) return { success: false, error: 'OTP not found' };
+  if (otp.usedAt) return { success: false, error: 'OTP has already been used' };
+  if (otp.expiresAt < now) return { success: false, error: 'OTP has expired' };
+  if (otp.attempts >= maxAttempts)
+    return { success: false, error: 'Maximum OTP attempts exceeded' };
 
-    // Check if OTP is expired
-    if (otp.expiresAt < now) {
-      return { success: false, error: 'OTP has expired' };
-    }
-
-    // Check if OTP was already used
-    if (otp.usedAt) {
-      return { success: false, error: 'OTP has already been used' };
-    }
-
-    // Check if max attempts exceeded
-    if (otp.attempts >= maxAttempts) {
-      return { success: false, error: 'Maximum OTP attempts exceeded' };
-    }
-
-    // Increment attempt count
+  // ❌ Wrong OTP
+  if (codeHash !== otp.codeHash) {
     await this.prisma.orchestrawOtp.update({
       where: { id: otp.id },
       data: { attempts: otp.attempts + 1 },
     });
 
-    // Validate OTP code
-    if (codeHash !== otp.codeHash) {
-      return { success: false, error: 'Invalid OTP code' };
-    }
-
-    // Mark OTP as used
-    await this.prisma.orchestrawOtp.update({
-      where: { id: otp.id },
-      data: { usedAt: now },
-    });
-
-    return { success: true };
+    return { success: false, error: 'Invalid OTP code' };
   }
+
+  // ✅ Correct OTP
+  await this.prisma.orchestrawOtp.update({
+    where: { id: otp.id },
+    data: {
+      usedAt: now,
+    },
+  });
+
+  return { success: true };
+}
+
 
   /**
    * Get unused OTP for email/purpose

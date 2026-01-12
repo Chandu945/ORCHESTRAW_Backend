@@ -11,8 +11,8 @@ import { StartEmailVerificationDto } from './dto/start-email-verification.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
 import { LoginOrchestrawDto } from './dto/login-orchestraw.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
+import { OrchestrawForgotPasswordDto } from './dto/forgot-password.dto';
+import { OrchestarwResetPasswordDto } from './dto/reset-password.dto';
 import { OrchestrawAccessGuard } from './guards/orchestraw-access.guard';
 import { OrchestrawRefreshGuard } from './guards/orchestraw-refresh.guard';
 import { OrchestrawEmailVerifyGuard } from './guards/orchestraw-email-verify.guard';
@@ -88,7 +88,7 @@ export class OrchestrawAuthController {
    * Body: { email: string }
    */
   @Post('forgot-password')
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+  async forgotPassword(@Body() dto: OrchestrawForgotPasswordDto) {
     return await this.authService.forgotPassword(dto);
   }
 
@@ -98,7 +98,7 @@ export class OrchestrawAuthController {
    * Body: { email: string, otp: string, newPassword: string }
    */
   @Post('reset-password')
-  async resetPassword(@Body() dto: ResetPasswordDto) {
+  async resetPassword(@Body() dto: OrchestarwResetPasswordDto) {
     return await this.authService.resetPassword(dto);
   }
 
