@@ -33,7 +33,7 @@ export class OrchestrawAuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   /**
    * Step 1: Start Email Verification
@@ -142,56 +142,56 @@ export class OrchestrawAuthService {
    * Step 3: Complete Registration
    * Creates OrchestrawAccount after email verification
    */
-async completeRegistration(
-  email: string,
-  dto: CompleteRegistrationDto,
-): Promise<{ message: string; accountId: string }> {
-  const { displayName, contactName, phoneNumber, password } = dto;
+  async completeRegistration(
+    email: string,
+    dto: CompleteRegistrationDto,
+  ): Promise<{ message: string; accountId: string }> {
+    const { displayName, contactName, phoneNumber, password } = dto;
 
-  // 1️⃣ Email must NOT already be registered
-  const existingAccount = await this.prisma.orchestrawAccount.findUnique({
-    where: { email },
-  });
+    // 1️⃣ Email must NOT already be registered
+    const existingAccount = await this.prisma.orchestrawAccount.findUnique({
+      where: { email },
+    });
 
-  if (existingAccount) {
-    throw new ConflictException('Email already registered');
+    if (existingAccount) {
+      throw new ConflictException('Email already registered');
+    }
+
+    // 2️⃣ Phone number uniqueness
+    const phoneOwner = await this.prisma.orchestrawAccount.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (phoneOwner) {
+      throw new ConflictException('Phone number already registered');
+    }
+
+    // 3️⃣ Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // 4️⃣ Create account (THIS is the registration moment)
+    const account = await this.prisma.orchestrawAccount.create({
+      data: {
+        displayName,
+        contactName,
+        email,
+        phoneNumber,
+        passwordHash,
+        emailVerified: true,
+        status: 'ACTIVE',
+      },
+    });
+
+    // 5️⃣ Best-effort welcome email
+    this.mailService
+      .sendWelcome(email, displayName)
+      .catch(err => console.error('Welcome email failed', err));
+
+    return {
+      message: 'Account created successfully',
+      accountId: account.id,
+    };
   }
-
-  // 2️⃣ Phone number uniqueness
-  const phoneOwner = await this.prisma.orchestrawAccount.findUnique({
-    where: { phoneNumber },
-  });
-
-  if (phoneOwner) {
-    throw new ConflictException('Phone number already registered');
-  }
-
-  // 3️⃣ Hash password
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  // 4️⃣ Create account (THIS is the registration moment)
-  const account = await this.prisma.orchestrawAccount.create({
-    data: {
-      displayName,
-      contactName,
-      email,
-      phoneNumber,
-      passwordHash,
-      emailVerified: true,
-      status: 'ACTIVE',
-    },
-  });
-
-  // 5️⃣ Best-effort welcome email
-  this.mailService
-    .sendWelcome(email, displayName)
-    .catch(err => console.error('Welcome email failed', err));
-
-  return {
-    message: 'Account created successfully',
-    accountId: account.id,
-  };
-}
 
 
   /**
@@ -401,6 +401,135 @@ async completeRegistration(
     );
 
     return { accessToken };
+  }
+
+  /**
+   * Handle Google OAuth Sign-in
+   * If account exists, login. If not, create new account
+   */
+  async googleSignin(googleProfile: any): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    account: any;
+  }> {
+    const { email, displayName, contactName, profileImageUrl } = googleProfile;
+
+    // Check if account already exists
+    let account = await this.prisma.orchestrawAccount.findUnique({
+      where: { email },
+    });
+
+    if (account) {
+      // Account exists, generate tokens
+      const tokens = await this.generateTokens(account.id, account.email);
+      return {
+        ...tokens,
+        account: {
+          id: account.id,
+          email: account.email,
+          displayName: account.displayName,
+          contactName: account.contactName,
+          emailVerified: account.emailVerified,
+          status: account.status,
+        },
+      };
+    }
+
+    // Create new account
+    const hashedPassword = await bcrypt.hash(
+      Math.random().toString(36).slice(-12),
+      10,
+    ); // Random password for OAuth users
+
+    account = await this.prisma.orchestrawAccount.create({
+      data: {
+        email,
+        displayName: displayName || email.split('@')[0],
+        contactName: contactName || displayName || email.split('@')[0],
+        phoneNumber: `+auto-${Date.now()}`, // Placeholder
+        passwordHash: hashedPassword,
+        emailVerified: true, // OAuth emails are verified
+        status: 'ACTIVE',
+      },
+    });
+
+    const tokens = await this.generateTokens(account.id, account.email);
+    return {
+      ...tokens,
+      account: {
+        id: account.id,
+        email: account.email,
+        displayName: account.displayName,
+        contactName: account.contactName,
+        emailVerified: account.emailVerified,
+        status: account.status,
+      },
+    };
+  }
+
+  /**
+   * Handle Facebook OAuth Sign-in
+   * If account exists, login. If not, create new account
+   */
+  async facebookSignin(facebookProfile: any): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    account: any;
+  }> {
+    const { email, displayName, contactName, profileImageUrl } =
+      facebookProfile;
+
+    // Check if account already exists
+    let account = await this.prisma.orchestrawAccount.findUnique({
+      where: { email },
+    });
+
+    if (account) {
+      // Account exists, generate tokens
+      const tokens = await this.generateTokens(account.id, account.email);
+      return {
+        ...tokens,
+        account: {
+          id: account.id,
+          email: account.email,
+          displayName: account.displayName,
+          contactName: account.contactName,
+          emailVerified: account.emailVerified,
+          status: account.status,
+        },
+      };
+    }
+
+    // Create new account
+    const hashedPassword = await bcrypt.hash(
+      Math.random().toString(36).slice(-12),
+      10,
+    ); // Random password for OAuth users
+
+    account = await this.prisma.orchestrawAccount.create({
+      data: {
+        email,
+        displayName: displayName || email.split('@')[0],
+        contactName: contactName || displayName || email.split('@')[0],
+        phoneNumber: `+auto-${Date.now()}`, // Placeholder
+        passwordHash: hashedPassword,
+        emailVerified: true, // OAuth emails are verified
+        status: 'ACTIVE',
+      },
+    });
+
+    const tokens = await this.generateTokens(account.id, account.email);
+    return {
+      ...tokens,
+      account: {
+        id: account.id,
+        email: account.email,
+        displayName: account.displayName,
+        contactName: account.contactName,
+        emailVerified: account.emailVerified,
+        status: account.status,
+      },
+    };
   }
 
   /**

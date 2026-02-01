@@ -5,7 +5,9 @@ import {
   UseGuards,
   Request,
   Get,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { OrchestrawAuthService } from './orchestraw-auth.service';
 import { StartEmailVerificationDto } from './dto/start-email-verification.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
@@ -16,6 +18,8 @@ import { OrchestarwResetPasswordDto } from './dto/reset-password.dto';
 import { OrchestrawAccessGuard } from './guards/orchestraw-access.guard';
 import { OrchestrawRefreshGuard } from './guards/orchestraw-refresh.guard';
 import { OrchestrawEmailVerifyGuard } from './guards/orchestraw-email-verify.guard';
+import { OrchestrawGoogleGuard } from './guards/orchestraw-google.guard';
+import { OrchestrawFacebookGuard } from './guards/orchestraw-facebook.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('/orchestraw-auth')
@@ -28,9 +32,7 @@ export class OrchestrawAuthController {
    * Body: { email: string }
    */
   @Post('start-email-verification')
-  async startEmailVerification(
-    @Body() dto: StartEmailVerificationDto,
-  ) {
+  async startEmailVerification(@Body() dto: StartEmailVerificationDto) {
     return await this.authService.startEmailVerification(dto);
   }
 
@@ -60,7 +62,7 @@ export class OrchestrawAuthController {
   //   return await this.authService.completeRegistration(email, dto);
   // }
   @ApiBearerAuth('email-verify-token')
-   @Post('complete-registration')
+  @Post('complete-registration')
   @UseGuards(OrchestrawEmailVerifyGuard)
   async completeRegistration(
     @Request() req,
@@ -126,5 +128,62 @@ export class OrchestrawAuthController {
       accountId: req.user.accountId,
       email: req.user.email,
     };
+  }
+
+  /**
+   * Google OAuth Sign-in
+   * GET /api/v1/orchestraw-auth/google
+   */
+  @Get('google')
+  @UseGuards(OrchestrawGoogleGuard)
+  async googleAuth() {
+    // This route is handled by Passport
+  }
+
+  /**
+   * Google OAuth Callback
+   * GET /api/v1/orchestraw-auth/google/callback
+   */
+  @Get('google/callback')
+  @UseGuards(OrchestrawGoogleGuard)
+  async googleAuthCallback(@Request() req, @Res() res: Response) {
+    try {
+      const profile = req.user;
+      const result = await this.authService.googleSignin(profile);
+
+      // Return tokens (you can also redirect to frontend with tokens)
+      return res.json(result);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Facebook OAuth Sign-in
+   * GET /api/v1/orchestraw-auth/facebook
+   */
+
+  @Get('facebook')
+  @UseGuards(OrchestrawFacebookGuard)
+  async facebookAuth() {
+    // This route is handled by Passport
+  }
+
+  /**
+   * Facebook OAuth Callback
+   * GET /api/v1/orchestraw-auth/facebook/callback
+   */
+  @Get('facebook/callback')
+  @UseGuards(OrchestrawFacebookGuard)
+  async facebookAuthCallback(@Request() req, @Res() res: Response) {
+    try {
+      const profile = req.user;
+      const result = await this.authService.facebookSignin(profile);
+      
+      // Return tokens (you can also redirect to frontend with tokens)
+      return res.json(result);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
   }
 }

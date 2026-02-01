@@ -9,9 +9,13 @@ import { MailModule } from '../mail/mail.module';
 import { OrchestrawJwtAccessStrategy } from './strategies/orchestraw-jwt-access.strategy';
 import { OrchestrawJwtRefreshStrategy } from './strategies/orchestraw-jwt-refresh.strategy';
 import { OrchestrawEmailVerifyStrategy } from './strategies/orchestraw-email-verify.strategy';
+import { OrchestrawGoogleStrategy } from './strategies/orchestraw-google.strategy';
+import { OrchestrawFacebookStrategy } from './strategies/orchestraw-facebook.strategy';
 import { OrchestrawAccessGuard } from './guards/orchestraw-access.guard';
 import { OrchestrawRefreshGuard } from './guards/orchestraw-refresh.guard';
 import { OrchestrawEmailVerifyGuard } from './guards/orchestraw-email-verify.guard';
+import { OrchestrawGoogleGuard } from './guards/orchestraw-google.guard';
+import { OrchestrawFacebookGuard } from './guards/orchestraw-facebook.guard';
 import { OrchestrawOtpService } from './orchestraw-otp.service';
 
 @Module({
@@ -29,9 +33,13 @@ import { OrchestrawOtpService } from './orchestraw-otp.service';
     OrchestrawJwtAccessStrategy,
     OrchestrawJwtRefreshStrategy,
     OrchestrawEmailVerifyStrategy,
+    OrchestrawGoogleStrategy,
+    OrchestrawFacebookStrategy,
     OrchestrawAccessGuard,
     OrchestrawRefreshGuard,
     OrchestrawEmailVerifyGuard,
+    OrchestrawGoogleGuard,
+    OrchestrawFacebookGuard,
   ],
   exports: [OrchestrawAuthService],
 })
